@@ -1,0 +1,89 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node / JS
+node_modules/
+dist/
+build/
+coverage/
+.npm
+.eslintcache
+.stylelintcache
+.tsbuildinfo
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Turborepo
+.turbo/
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environment Variables (CRITICAL)
+.env
+.env.*
+!.env.example
+*.local
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# SQLite databases (if any)
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# AI Coding tools memory
+.cursor/
+.cursorrules
+.cline/
+.aider/
+.aider*
+.agent/
+brain/
+docs/FEATURE.md.bak

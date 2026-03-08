@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # -------------------------------------
+  # 🐘 PostgreSQL (Database Core - Relational & Full-Text)
+  # -------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: story_postgres_dev
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-story_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-story_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------
+  # 🎯 Qdrant (Vector Database cho Context/Style)
+  # -------------------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: story_qdrant_dev
+    restart: always
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # -------------------------------------
+  # 🕸️ Neo4j (Graph Database cho cốt truyện)
+  # -------------------------------------
+  neo4j:
+    image: neo4j:5-community
+    container_name: story_neo4j_dev
+    restart: always
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password123}
+      # Cho phép dùng APOC library nếu cần thiết
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    ports:
+      - "7474:7474" # HTTP Browser UI
+      - "7687:7687" # Bolt Protocol (Cho App connect)
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+
+  # -------------------------------------
+  # ⚡ Redis (Message Broker & Cache cho thư viện Celery/FastAPI)
+  # -------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: story_redis_dev
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
