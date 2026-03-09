@@ -1,0 +1,21 @@
+{
+  "enabledPlugins": {
+    "engineering-skills@claude-code-skills": true,
+    "engineering-advanced-skills@claude-code-skills": true,
+    "product-skills@claude-code-skills": true,
+    "marketing-skills@claude-code-skills": true,
+    "pm-skills@claude-code-skills": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "fullstack-dev-skills@fullstack-dev-skills": true,
+    "frontend-design@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "agent-sdk-dev@claude-code-plugins": true,
+    "plugin-dev@claude-code-plugins": true,
+    "fullstack-engineer@claude-code-skills": true
+  }
+}

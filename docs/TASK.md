@@ -37,6 +37,20 @@ Tiến độ được đánh dấu theo chuẩn Markdown: `[ ]` (Chưa làm), `[
 
 ---
 
+## GIAI ĐOẠN 3.5: VISUAL GRAPH UI (Bản đồ Thực thể)
+- [x] Cài @xyflow/react + @dagrejs/dagre vào `apps/web`
+- [x] Tạo TypeScript types & mock demo data (Kurama, Kento, Raito...)
+- [x] Xây 5 custom Node components (Person/Location/Skill/Event/Item) - Glassmorphism style
+- [x] GraphCanvas với auto-layout dagre, MiniMap, Controls
+- [x] GraphToolbar: Add node buttons + Tự xếp
+- [x] NodeDetailPanel: Slide-in panel View/Edit, xóa node
+- [x] GraphLegend: Chú thích màu sắc node types & relationship
+- [x] Trang `/dashboard/projects/[id]/graph` - 2 mode View/Edit
+- [x] Trang `/dashboard/projects` - Danh sách dự án truyện
+- [x] Thêm "Bản đồ truyện" vào Dashboard sidebar
+
+---
+
 ## GIAI ĐOẠN 4: LUỒNG RAG & TRÍ NHỚ ĐA TẦNG (CORE AI)
 - [ ] Viết API Sinh Vector (Embeddings) gọi endpoint Model BGE-M3.
 - [ ] Viết Service `rag_service.py`: Lấy Lorebook từ Postgres (tsvector).

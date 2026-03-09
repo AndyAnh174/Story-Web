@@ -32,7 +32,7 @@ Tài liệu này liệt kê toàn bộ các tính năng lớn nhỏ mà hệ th�
 
 *   [ ] **Trích xuất thực thể theo thời gian thực (Entity Extraction):** Trong lúc tác giả đang chat với AI để sáng tác hoặc lúc lưu thông tin cấu hình tay, AI tự chạy ngầm trích xuất Nhân vật (Person), Địa điểm (Location), Nhánh tình tiết (Event), Bí kíp (Skill), Đồ vật (Item) cất vào Graph.
 *   [ ] **Nhắc Tuồng Bối Cảnh (Graph RAG Retrieval):** Khi tác giả gõ *"Nam chính đi vào sảnh"*, Graph tự động nội suy xem nam chính đang quen biết ai, thù ai ở cái sảnh đó để mớm vào System Prompt cho AI viết tiếp không bị sai Logic (Râu ông nọ cắm cằm bà kia).
-*   [ ] **Bản Đồ Mạng Lưới Nhãn Quan (Visual Graph Map):** Giao diện UI đồ hoạ để tác giả xem toàn cảnh sự liên kết mạng nhện giữa các nhân vật (Ai thù ai, ai yêu ai) và các mảnh ghép cốt truyện (Bang phái, Địa điểm) tương tự như mô hình Obsidian Graph View.
+*   [x] **Bản Đồ Mạng Lưới Nhãn Quan (Visual Graph Map):** Giao diện UI đồ hoạ để tác giả xem toàn cảnh sự liên kết mạng nhện giữa các nhân vật (Ai thù ai, ai yêu ai) và các mảnh ghép cốt truyện (Bang phái, Địa điểm) tương tự như mô hình Obsidian Graph View. **[DONE: `/dashboard/projects/[id]/graph`, dùng @xyflow/react + dagre layout, 2 mode View/Edit, 5 node types, NodeDetailPanel]**
 
 ## 🏹 5. Phân Hệ Giữ Vững Văn Phong Đã Viết (Văn Phong - Qdrant Vector)
 **Công nghệ:** Tốc độ Vector Search Qdrant, Model bge-m3:567m.
