@@ -34,7 +34,20 @@
       "Bash(grep -n \"customSystemPrompt\\\\|custom_system\\\\|systemPrompt\\\\|settings\\\\|ChatSettings\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
       "Bash(grep -rn \"Cài đặt\\\\|settings\\\\|systemPrompt\\\\|SettingsDialog\\\\|custom_system\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
       "Bash(grep -n \"saveCustomPrompt\\\\|customPrompt\\\\|setCustomPrompt\\\\|onChange\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
-      "mcp__plugin_playwright_playwright__browser_resize"
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "Bash(ls \"D:\\\\Story\\\\Story-Web\\\\apps\\\\environment\"\" 2>/dev/null && echo \"---\" && ls \"D:StoryStory-Web\"\")",
+      "Bash(docker --version)",
+      "Bash(docker compose version)",
+      "Bash(docker compose -f docker-compose.prod.yml up -d --build)",
+      "Bash(docker ps -a --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\")",
+      "Bash(docker compose -f docker-compose.prod.yml build)",
+      "Bash(docker compose -f docker-compose.prod.yml up -d)",
+      "Bash(docker ps --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\")",
+      "Bash(docker compose -f docker-compose.prod.yml build api worker)",
+      "Bash(docker compose -f docker-compose.prod.yml up -d api worker)",
+      "Bash(docker ps --format \"table {{.Names}}\\\\t{{.Status}}\")",
+      "Bash(docker compose -f docker-compose.prod.yml up -d --no-build api worker)",
+      "Bash(docker compose -f docker-compose.prod.yml build api worker --no-cache=false)"
     ]
   }
 }

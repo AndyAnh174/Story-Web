@@ -13,8 +13,9 @@ class QdrantConnection:
         try:
             # Qdrant Client thiết kế hỗ trợ async HTTP/gRPC khá tốt
             self.client = AsyncQdrantClient(
-                host=settings.QDRANT_HOST, 
-                port=settings.QDRANT_PORT
+                host=settings.QDRANT_HOST,
+                port=settings.QDRANT_PORT,
+                check_compatibility=False,
             )
             logger.info(f"Successfully connected to Qdrant vector database at {settings.QDRANT_HOST}:{settings.QDRANT_PORT}.")
         except Exception as e:
