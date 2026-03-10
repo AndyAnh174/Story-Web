@@ -13,13 +13,15 @@ logger = logging.getLogger(__name__)
 async def stream_chat(
     system_prompt: str,
     user_message: str,
+    model: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
-    Stream text generation từ Ollama (gpt-oss:120b-cloud).
+    Stream text generation từ Ollama.
     Yield từng chunk text để trả về qua SSE.
+    model: override model name, nếu None thì dùng settings.OLLAMA_MODEL_GEN
     """
     payload = {
-        "model": settings.OLLAMA_MODEL_GEN,
+        "model": model or settings.OLLAMA_MODEL_GEN,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},

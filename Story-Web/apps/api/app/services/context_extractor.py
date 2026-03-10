@@ -5,6 +5,7 @@ Chạy ngầm sau mỗi lần tác giả "Chốt" nội dung.
 import json
 import logging
 import re
+import uuid
 from app.services.ai_service import generate_once
 
 logger = logging.getLogger(__name__)
@@ -22,18 +23,24 @@ Hãy trả về JSON với cấu trúc SAU (chỉ JSON, không giải thích th�
   "new_skills": [
     {{"name": "string", "used_by": "string", "description": "string"}}
   ],
+  "new_items": [
+    {{"name": "string", "description": "string", "owned_by": "string"}}
+  ],
   "character_status_changes": [
     {{"name": "string", "old_status": "Alive|Unknown", "new_status": "Dead|Alive", "reason": "string"}}
   ],
   "new_events": [
-    {{"name": "string", "participants": ["string"], "outcome": "string"}}
+    {{"name": "string", "participants": ["string"], "location": "string", "outcome": "string"}}
   ],
   "new_locations": [
-    {{"name": "string", "description": "string"}}
+    {{"name": "string", "description": "string", "visited_by": ["string"]}}
   ]
 }}
 
-Nếu không có dữ liệu cho một mục, để array rỗng []. Chỉ trả về JSON."""
+Ghi chú:
+- "new_items": vũ khí, bảo vật, đồ vật đặc biệt mà nhân vật nhận được hoặc sở hữu trong đoạn văn. "owned_by" là tên nhân vật sở hữu (hoặc "" nếu không rõ).
+- "new_skills": chiêu thức, kỹ năng, pháp môn. "used_by" là tên nhân vật sử dụng (hoặc "" nếu không rõ).
+- Nếu không có dữ liệu cho một mục, để array rỗng []. Chỉ trả về JSON."""
 
 
 async def extract_entities(content: str, project_id: str) -> dict:
@@ -62,6 +69,7 @@ def _empty_extraction() -> dict:
     return {
         "new_characters": [],
         "new_skills": [],
+        "new_items": [],
         "character_status_changes": [],
         "new_events": [],
         "new_locations": [],
@@ -79,12 +87,15 @@ async def update_neo4j_from_extraction(extracted: dict, project_id: str, neo4j_s
             await neo4j_session.run(
                 """
                 MERGE (p:Person {name: $name, project_id: $project_id})
-                ON CREATE SET p.description = $description, p.status = 'Alive', p.created_at = datetime()
-                ON MATCH SET p.description = coalesce($description, p.description)
+                ON CREATE SET p.node_id = $node_id, p.description = $description,
+                              p.status = 'Alive', p.created_at = datetime()
+                ON MATCH SET p.description = coalesce($description, p.description),
+                             p.node_id = coalesce(p.node_id, $node_id)
                 """,
                 name=char["name"],
                 project_id=project_id,
                 description=char.get("description", ""),
+                node_id=str(uuid.uuid4()),
             )
 
         # 2. Tạo skill mới + nối quan hệ với nhân vật
@@ -92,25 +103,60 @@ async def update_neo4j_from_extraction(extracted: dict, project_id: str, neo4j_s
             await neo4j_session.run(
                 """
                 MERGE (s:Skill {name: $name, project_id: $project_id})
-                ON CREATE SET s.description = $description, s.created_at = datetime()
+                ON CREATE SET s.node_id = $node_id, s.description = $description,
+                              s.created_at = datetime()
+                ON MATCH SET s.node_id = coalesce(s.node_id, $node_id)
                 """,
                 name=skill["name"],
                 project_id=project_id,
                 description=skill.get("description", ""),
+                node_id=str(uuid.uuid4()),
             )
             if skill.get("used_by"):
                 await neo4j_session.run(
                     """
                     MATCH (p:Person {name: $person_name, project_id: $project_id})
                     MATCH (s:Skill {name: $skill_name, project_id: $project_id})
-                    MERGE (p)-[:OWNS_SKILL {project_id: $project_id}]->(s)
+                    MERGE (p)-[r:OWNS_SKILL {project_id: $project_id}]->(s)
+                    ON CREATE SET r.edge_id = $edge_id
+                    ON MATCH SET r.edge_id = coalesce(r.edge_id, $edge_id)
                     """,
                     person_name=skill["used_by"],
                     skill_name=skill["name"],
                     project_id=project_id,
+                    edge_id=str(uuid.uuid4()),
                 )
 
-        # 3. Cập nhật trạng thái nhân vật (sống/chết)
+        # 3. Tạo Item nodes + OWNS_ITEM relationships
+        for item in extracted.get("new_items", []):
+            await neo4j_session.run(
+                """
+                MERGE (i:Item {name: $name, project_id: $project_id})
+                ON CREATE SET i.node_id = $node_id, i.description = $description,
+                              i.created_at = datetime()
+                ON MATCH SET i.node_id = coalesce(i.node_id, $node_id)
+                """,
+                name=item["name"],
+                project_id=project_id,
+                description=item.get("description", ""),
+                node_id=str(uuid.uuid4()),
+            )
+            if item.get("owned_by"):
+                await neo4j_session.run(
+                    """
+                    MATCH (p:Person {name: $person_name, project_id: $project_id})
+                    MATCH (i:Item {name: $item_name, project_id: $project_id})
+                    MERGE (p)-[r:OWNS_ITEM {project_id: $project_id}]->(i)
+                    ON CREATE SET r.edge_id = $edge_id
+                    ON MATCH SET r.edge_id = coalesce(r.edge_id, $edge_id)
+                    """,
+                    person_name=item["owned_by"],
+                    item_name=item["name"],
+                    project_id=project_id,
+                    edge_id=str(uuid.uuid4()),
+                )
+
+        # 4. Cập nhật trạng thái nhân vật (sống/chết)
         for change in extracted.get("character_status_changes", []):
             if change.get("new_status") == "Dead":
                 await neo4j_session.run(
@@ -132,44 +178,84 @@ async def update_neo4j_from_extraction(extracted: dict, project_id: str, neo4j_s
                     project_id=project_id,
                 )
 
-        # 4. Tạo Event nodes
+        # 4. Tạo Event nodes + relationships
         for event in extracted.get("new_events", []):
             await neo4j_session.run(
                 """
                 MERGE (e:Event {name: $name, project_id: $project_id})
-                ON CREATE SET e.outcome = $outcome, e.created_at = datetime()
+                ON CREATE SET e.node_id = $node_id, e.outcome = $outcome,
+                              e.created_at = datetime()
+                ON MATCH SET e.node_id = coalesce(e.node_id, $node_id)
                 """,
                 name=event["name"],
                 project_id=project_id,
                 outcome=event.get("outcome", ""),
+                node_id=str(uuid.uuid4()),
             )
             for participant in event.get("participants", []):
                 await neo4j_session.run(
                     """
                     MATCH (p:Person {name: $person_name, project_id: $project_id})
                     MATCH (e:Event {name: $event_name, project_id: $project_id})
-                    MERGE (p)-[:PARTICIPATED_IN {project_id: $project_id}]->(e)
+                    MERGE (p)-[r:PARTICIPATED_IN {project_id: $project_id}]->(e)
+                    ON CREATE SET r.edge_id = $edge_id
+                    ON MATCH SET r.edge_id = coalesce(r.edge_id, $edge_id)
                     """,
                     person_name=participant,
                     event_name=event["name"],
                     project_id=project_id,
+                    edge_id=str(uuid.uuid4()),
+                )
+            # Gắn event với location (HAPPENED_AT)
+            if event.get("location"):
+                await neo4j_session.run(
+                    """
+                    MATCH (e:Event {name: $event_name, project_id: $project_id})
+                    MATCH (l:Location {name: $loc_name, project_id: $project_id})
+                    MERGE (e)-[r:HAPPENED_AT {project_id: $project_id}]->(l)
+                    ON CREATE SET r.edge_id = $edge_id
+                    ON MATCH SET r.edge_id = coalesce(r.edge_id, $edge_id)
+                    """,
+                    event_name=event["name"],
+                    loc_name=event["location"],
+                    project_id=project_id,
+                    edge_id=str(uuid.uuid4()),
                 )
 
-        # 5. Tạo Location nodes
+        # 5. Tạo Location nodes + VISITED relationships
         for loc in extracted.get("new_locations", []):
             await neo4j_session.run(
                 """
                 MERGE (l:Location {name: $name, project_id: $project_id})
-                ON CREATE SET l.description = $description, l.created_at = datetime()
+                ON CREATE SET l.node_id = $node_id, l.description = $description,
+                              l.created_at = datetime()
+                ON MATCH SET l.node_id = coalesce(l.node_id, $node_id)
                 """,
                 name=loc["name"],
                 project_id=project_id,
                 description=loc.get("description", ""),
+                node_id=str(uuid.uuid4()),
             )
+            # Gắn nhân vật đến thăm/hoạt động tại location
+            for visitor in loc.get("visited_by", []):
+                await neo4j_session.run(
+                    """
+                    MATCH (p:Person {name: $person_name, project_id: $project_id})
+                    MATCH (l:Location {name: $loc_name, project_id: $project_id})
+                    MERGE (p)-[r:VISITED {project_id: $project_id}]->(l)
+                    ON CREATE SET r.edge_id = $edge_id
+                    ON MATCH SET r.edge_id = coalesce(r.edge_id, $edge_id)
+                    """,
+                    person_name=visitor,
+                    loc_name=loc["name"],
+                    project_id=project_id,
+                    edge_id=str(uuid.uuid4()),
+                )
 
         logger.info(f"Neo4j updated for project {project_id}: "
                     f"{len(extracted.get('new_characters', []))} chars, "
                     f"{len(extracted.get('new_skills', []))} skills, "
+                    f"{len(extracted.get('new_items', []))} items, "
                     f"{len(extracted.get('character_status_changes', []))} status changes")
 
     except Exception as e:

@@ -32,6 +32,11 @@ class ChatMessageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ChatUpdate(BaseModel):
+    title: str
+
+
 class StreamChatRequest(BaseModel):
     content: str                              # Tin nhắn từ user
     custom_system_prompt: str | None = None   # Hướng dẫn thêm từ tác giả (gắn vào cuối system prompt)
+    model: str | None = None                  # Override model (nếu None → dùng default từ settings)

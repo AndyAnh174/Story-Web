@@ -43,29 +43,42 @@ async def _extract_and_update_async(content: str, project_id: str):
     # 1. Entity extraction
     extracted = await extract_entities(content, project_id)
 
-    # 2. Neo4j update
-    if not neo4j_db.driver:
-        await neo4j_db.connect()
-    async with neo4j_db.driver.session() as neo4j_session:
-        await update_neo4j_from_extraction(extracted, project_id, neo4j_session)
-
-    # 3. Embed + upsert vào Qdrant
-    if not qdrant_db.client:
-        qdrant_db.connect()
-
-    vector = await get_embedding(content[:2000])  # Giới hạn 2000 ký tự
-    point = PointStruct(
-        id=str(uuid.uuid4()),
-        vector=vector,
-        payload={
-            "project_id": project_id,
-            "text_chunk": content[:2000],
-        },
+    # 2. Neo4j update — luôn tạo kết nối mới (tránh lỗi asyncio event loop reuse trên Windows)
+    from neo4j import AsyncGraphDatabase
+    from app.core.config import settings
+    neo4j_driver = AsyncGraphDatabase.driver(
+        settings.NEO4J_URI,
+        auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
     )
-    await qdrant_db.client.upsert(
-        collection_name="project_memories",
-        points=[point],
-    )
+    try:
+        async with neo4j_driver.session() as neo4j_session:
+            await update_neo4j_from_extraction(extracted, project_id, neo4j_session)
+    finally:
+        await neo4j_driver.close()
+
+    # 3. Embed + upsert vào Qdrant (non-critical — không retry nếu embed server offline)
+    try:
+        if not qdrant_db.client:
+            qdrant_db.connect()
+        if not qdrant_db.client:
+            raise RuntimeError("Qdrant client not initialized")
+        vector = await get_embedding(content[:2000])
+        point = PointStruct(
+            id=str(uuid.uuid4()),
+            vector=vector,
+            payload={
+                "project_id": project_id,
+                "text_chunk": content[:2000],
+            },
+        )
+        await qdrant_db.client.upsert(
+            collection_name="project_memories",
+            points=[point],
+        )
+        logger.info(f"Qdrant upsert done for project {project_id}")
+    except Exception as e:
+        logger.warning(f"Qdrant embedding skipped (embed server unavailable): {e}")
+
     logger.info(f"extract_and_update done for project {project_id}")
 
 

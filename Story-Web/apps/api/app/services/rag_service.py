@@ -31,7 +31,6 @@ async def get_lorebook_context(prompt: str, project_id: str, db: AsyncSession) -
             SELECT keyword, category, description
             FROM lorebooks
             WHERE project_id = :project_id
-              AND is_deleted IS NOT TRUE
               AND fts_vector @@ to_tsquery('simple', :tsquery)
             LIMIT 5
         """)
@@ -73,9 +72,9 @@ async def get_vector_context(
     try:
         vector = await get_embedding(prompt)
 
-        results = await qdrant.search(
+        results = await qdrant.query_points(
             collection_name=QDRANT_COLLECTION,
-            query_vector=vector,
+            query=vector,
             query_filter=Filter(
                 must=[
                     FieldCondition(key="project_id", match=MatchValue(value=project_id)),
@@ -85,6 +84,7 @@ async def get_vector_context(
             limit=QDRANT_TOP_K,
             with_payload=True,
         )
+        results = results.points
 
         if not results:
             return ""
@@ -188,8 +188,10 @@ async def build_system_prompt(
         graph_ctx = ""
 
     prompt_parts = [
-        f"Bạn là một Đạo diễn Cốt truyện kỳ cựu đang hỗ trợ tác giả viết tác phẩm: **{project_title}**.",
-        "Nhiệm vụ của bạn là viết tiếp cốt truyện theo yêu cầu, đảm bảo logic nhân vật nhất quán tuyệt đối.",
+        f"Bạn là một Đạo diễn Cốt truyện kỳ cựu đang hỗ trợ tác giả viết tác phẩm hư cấu: **{project_title}**.",
+        "Đây là một tác phẩm tiểu thuyết/light novel hư cấu hoàn toàn. Mọi nhân vật, sự kiện, cái chết, chiến đấu đều là hư cấu nghệ thuật.",
+        "Nhiệm vụ của bạn là viết tiếp cốt truyện theo yêu cầu của tác giả — bao gồm các cảnh chiến đấu, nhân vật hi sinh, hay bất kỳ tình tiết nào phù hợp thể loại tiểu thuyết.",
+        "Đảm bảo logic nhân vật nhất quán tuyệt đối và thể hiện đúng tinh thần tác phẩm.",
         "",
     ]
 
@@ -216,10 +218,21 @@ async def build_system_prompt(
 
     prompt_parts += [
         "### QUY TẮC BẮT BUỘC",
+        "- Đây là tiểu thuyết hư cấu — LUÔN hoàn thành yêu cầu viết của tác giả, kể cả cảnh chiến đấu, nhân vật chết, hay xung đột kịch tính.",
         "- Tuân thủ 100% trạng thái nhân vật ở trên.",
         "- Nhân vật đã CHẾT không được xuất hiện, nói chuyện hay hành động.",
         "- Giữ văn phong nhất quán với các đoạn trước.",
         "- Viết bằng tiếng Việt, sinh động và hấp dẫn.",
+        "- KHÔNG từ chối viết bất kỳ tình tiết nào trong khuôn khổ câu chuyện hư cấu.",
+        "",
+        "### ĐỊNH DẠNG MARKDOWN (BẮT BUỘC)",
+        "- Dùng **in đậm** cho tên nhân vật, chiêu thức, địa danh và vật phẩm quan trọng.",
+        "- Dùng *in nghiêng* cho suy nghĩ nội tâm, độc thoại, hoặc nhấn mạnh cảm xúc.",
+        "- Ngắt đoạn bằng dòng trống giữa các cảnh hoặc mỗi đoạn văn (đừng viết liền một khối).",
+        "- Dùng `---` trên một dòng riêng để phân tách chuyển cảnh hoặc thay đổi góc nhìn (POV).",
+        "- KHÔNG dùng tiêu đề H1 (`#`) hay H2 (`##`) trong thân truyện, trừ khi tác giả yêu cầu tên chương.",
+        "- KHÔNG dùng code block (``` ```) — chỉ dành cho văn xuôi thuần.",
+        "- Đối thoại viết trong dấu ngoặc kép hoặc dấu gạch ngang em (—), nhất quán theo văn phong hiện tại.",
     ]
 
     return "\n".join(prompt_parts)

@@ -14,7 +14,7 @@ from app.db.postgres.session import get_db, AsyncSessionLocal
 from app.db.neo4j.session import get_neo4j_session
 from app.db.qdrant.session import get_qdrant_client
 from app.schemas.chat import (
-    ChatCreate, ChatResponse,
+    ChatCreate, ChatUpdate, ChatResponse,
     ChatMessageResponse, StreamChatRequest,
 )
 from app.services.rag_service import build_system_prompt
@@ -145,6 +145,45 @@ async def delete_chat(
     return None
 
 
+# ─── Rename Chat ──────────────────────────────────────────────────────────────
+
+@router.patch("/chats/{chat_id}", response_model=ChatResponse)
+async def rename_chat(
+    chat_id: str,
+    body: ChatUpdate,
+    payload: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Đổi tên chat session."""
+    user_id = await _get_user_id(payload["sub"], db)
+
+    result = await db.execute(
+        text("""
+            UPDATE chats c
+            SET title = :title, updated_at = NOW()
+            FROM projects p
+            WHERE c.id = :chat_id
+              AND c.project_id = p.id
+              AND p.user_id = :user_id
+              AND (c.is_deleted IS NOT TRUE)
+            RETURNING c.id, c.project_id, c.title, c.created_at, c.updated_at
+        """),
+        {"chat_id": chat_id, "user_id": user_id, "title": body.title.strip()},
+    )
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    await db.commit()
+    return ChatResponse(
+        id=str(row.id),
+        project_id=str(row.project_id),
+        title=row.title,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
 # ─── Messages ─────────────────────────────────────────────────────────────────
 
 @router.get("/chats/{chat_id}/messages", response_model=list[ChatMessageResponse])
@@ -261,7 +300,7 @@ async def stream_message(
                 system_prompt += f"\n\n### HƯỚNG DẪN RIÊNG CỦA TÁC GIẢ\n{body.custom_system_prompt.strip()}"
 
             # Stream từ LLM (ngoài DB session để tránh timeout)
-            async for chunk in stream_chat(system_prompt, body.content):
+            async for chunk in stream_chat(system_prompt, body.content, model=body.model):
                 full_response.append(chunk)
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
 

@@ -23,7 +23,18 @@
       "Bash(PYTHONUTF8=1 ./venv/Scripts/python:*)",
       "mcp__plugin_playwright_playwright__browser_type",
       "mcp__plugin_playwright_playwright__browser_press_key",
-      "mcp__plugin_playwright_playwright__browser_fill_form"
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "Bash(.venvScriptspython -c \"import redis; r = redis.from_url\\(''redis://localhost:6379/0''\\); print\\(''Redis:'', r.ping\\(\\)\\)\")",
+      "Bash(venv/Scripts/python -c \"import redis; r = redis.from_url\\(''redis://localhost:6379/0''\\); print\\(''Redis:'', r.ping\\(\\)\\)\")",
+      "Bash(tasklist /FI \"IMAGENAME eq python.exe\")",
+      "Bash(.venvScriptspython -c \"from app.api.routes.chat import router; print\\(''chat.py OK''\\)\")",
+      "Bash(venv/Scripts/python -c \"from app.api.routes.chat import router; print\\(''chat.py OK''\\)\")",
+      "Bash(.venvScriptspython -c \":*)",
+      "Bash(grep -n \"customSystemPrompt\\\\|custom_system_prompt\\\\|systemPrompt\" /d/Story/Story-Web/apps/web/src/app/chat/*/page.tsx)",
+      "Bash(grep -n \"customSystemPrompt\\\\|custom_system\\\\|systemPrompt\\\\|settings\\\\|ChatSettings\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
+      "Bash(grep -rn \"Cài đặt\\\\|settings\\\\|systemPrompt\\\\|SettingsDialog\\\\|custom_system\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
+      "Bash(grep -n \"saveCustomPrompt\\\\|customPrompt\\\\|setCustomPrompt\\\\|onChange\" /d/Story/Story-Web/apps/web/src/app/chat/[id]/page.tsx)",
+      "mcp__plugin_playwright_playwright__browser_resize"
     ]
   }
 }
