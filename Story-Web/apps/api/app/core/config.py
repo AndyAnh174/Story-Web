@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # AI Endpoints
-    OLLAMA_GEN_HOST: str = "http://localhost:11434"
+    OLLAMA_GEN_HOST: str = "http://222.253.80.30:11434"
     OLLAMA_MODEL_GEN: str = "gpt-oss:120b-cloud"
     OLLAMA_EMBED_HOST: str = "http://222.253.80.30:11434/api/embeddings"
     OLLAMA_MODEL_EMBED: str = "bge-m3:567m"
